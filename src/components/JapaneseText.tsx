@@ -1,10 +1,13 @@
 import { JapaneseText as JpText } from "@/types/lesson";
+import { Volume2 } from "lucide-react";
+import { useCallback } from "react";
 
 interface JapaneseTextProps {
   jp: JpText;
   showRomanji?: boolean;
   className?: string;
   size?: "sm" | "md" | "lg" | "xl";
+  audioUrl?: string;
 }
 
 const sizeClasses = {
@@ -14,12 +17,33 @@ const sizeClasses = {
   xl: "text-4xl",
 };
 
-export const JapaneseText = ({ jp, showRomanji = true, className = "", size = "md" }: JapaneseTextProps) => {
+const iconSizes = {
+  sm: "h-3.5 w-3.5",
+  md: "h-4 w-4",
+  lg: "h-5 w-5",
+  xl: "h-6 w-6",
+};
+
+export const playAudio = (url: string) => {
+  if (!url) return;
+  const audio = new Audio(url);
+  audio.play().catch(() => {});
+};
+
+export const JapaneseText = ({ jp, showRomanji = true, className = "", size = "md", audioUrl }: JapaneseTextProps) => {
   const hasKanji = jp.text !== jp.ruby;
+
+  const handlePlay = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (audioUrl) playAudio(audioUrl);
+    },
+    [audioUrl]
+  );
 
   return (
     <div className={`flex flex-col items-center gap-1 ${className}`}>
-      <span className={`${sizeClasses[size]} font-semibold leading-relaxed`} style={{ fontFamily: "'Noto Serif JP', serif" }}>
+      <span className={`${sizeClasses[size]} font-semibold leading-relaxed inline-flex items-center gap-2`} style={{ fontFamily: "'Noto Serif JP', serif" }}>
         {hasKanji ? (
           <ruby>
             {jp.text}
@@ -27,6 +51,15 @@ export const JapaneseText = ({ jp, showRomanji = true, className = "", size = "m
           </ruby>
         ) : (
           jp.text
+        )}
+        {audioUrl && (
+          <button
+            onClick={handlePlay}
+            className="text-primary hover:text-primary/80 transition-colors active:scale-90"
+            aria-label="Phát âm thanh"
+          >
+            <Volume2 className={iconSizes[size]} />
+          </button>
         )}
       </span>
       {showRomanji && (
