@@ -55,12 +55,12 @@ export const FlashCard = ({ words }: FlashCardProps) => {
           >
             {!flipped ? (
               <>
-                <JapaneseText jp={word.jp} size="lg" />
+                <JapaneseText jp={word.jp} size="lg" audioUrl={word.audioUrl} />
                 <p className="text-xs text-muted-foreground mt-2">Nhấn để xem nghĩa</p>
               </>
             ) : (
               <>
-                <JapaneseText jp={word.jp} size="md" />
+                <JapaneseText jp={word.jp} size="md" audioUrl={word.audioUrl} />
                 <div className="h-px w-16 bg-border my-2" />
                 <p className="text-lg font-medium text-foreground">{word.vi}</p>
                 {word.example[0] && (

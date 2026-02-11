@@ -222,7 +222,7 @@ export const Quiz = ({ words, onExit }: QuizProps) => {
           className="w-full"
         >
           <div className="rounded-2xl border bg-card p-6 text-center shadow-md">
-            <JapaneseText jp={question.word.jp} size="lg" />
+            <JapaneseText jp={question.word.jp} size="lg" audioUrl={question.word.audioUrl} />
 
             {question.type === "multiple-choice" && (
               <div className="mt-6 grid gap-3">
