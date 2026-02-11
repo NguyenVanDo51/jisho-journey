@@ -1,52 +1,30 @@
 import { useState, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Word, QuizQuestion } from "@/types/lesson";
-import { JapaneseText } from "@/components/JapaneseText";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, X, Trophy } from "lucide-react";
+import { shuffle, pickRandom } from "@/lib/utils";
+import {
+  generateQuestion,
+  generateMatchQuestion,
+} from "@/components/quiz/quizGenerator";
+import { QuizMultipleChoice } from "@/components/quiz/QuizMultipleChoice";
+import { QuizTrueFalse } from "@/components/quiz/QuizTrueFalse";
+import { QuizWordBuild } from "@/components/quiz/QuizWordBuild";
+import { QuizMatch } from "@/components/quiz/QuizMatch";
+import { QuizFillBlank } from "@/components/quiz/QuizFillBlank";
+import { QuizListenChoose } from "@/components/quiz/QuizListenChoose";
 
 /** Number of consecutive correct answers to "know" a word */
 const REQUIRED_CORRECT = 5;
 /** Number of active words in each learning session */
 const SESSION_SIZE = 4;
+/** Trigger a match round every N single-word questions */
+const MATCH_INTERVAL = 8;
 
 interface QuizProps {
   words: Word[];
   onExit: () => void;
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function generateQuestion(word: Word, pool: Word[]): QuizQuestion {
-  const type = Math.random() > 0.5 ? "multiple-choice" : "yes-no";
-
-  if (type === "multiple-choice") {
-    const others = shuffle(pool.filter((w) => w.id !== word.id)).slice(0, 3);
-    const options = shuffle([
-      { vi: word.vi, jp: word.jp },
-      ...others.map((w) => ({ vi: w.vi, jp: w.jp })),
-    ]);
-    return { type, word, options, correctAnswer: word.vi };
-  } else {
-    const isCorrect = Math.random() > 0.5;
-    const displayWord = isCorrect
-      ? word
-      : shuffle(pool.filter((w) => w.id !== word.id))[0] || word;
-    return {
-      type,
-      word,
-      correctAnswer: isCorrect ? "yes" : "no",
-      displayedAnswer: displayWord.vi,
-      isCorrectPairing: isCorrect,
-    };
-  }
 }
 
 interface WordProgress {
@@ -77,86 +55,155 @@ export const Quiz = ({ words, onExit }: QuizProps) => {
   const [roundComplete, setRoundComplete] = useState(false);
 
   const [score, setScore] = useState({ correct: 0, total: 0 });
-  const [answered, setAnswered] = useState<string | null>(null);
+  const [answered, setAnswered] = useState(false);
+  const [lastCorrect, setLastCorrect] = useState(false);
+  const questionCountRef = useRef(0);
+  /** Stable key for AnimatePresence — only incremented on explicit question change */
+  const questionIdRef = useRef(0);
 
-  // Pick a random word from active words for the question
-  const pickWord = useCallback(
-    (active: Word[]) => active[Math.floor(Math.random() * active.length)],
-    []
-  );
-
-  const [question, setQuestion] = useState<QuizQuestion>(() =>
-    generateQuestion(pickWord(allShuffled.slice(0, Math.min(SESSION_SIZE, allShuffled.length))), words)
-  );
+  // Generate initial question
+  const [question, setQuestion] = useState<QuizQuestion>(() => {
+    const initial = allShuffled.slice(
+      0,
+      Math.min(SESSION_SIZE, allShuffled.length)
+    );
+    return generateQuestion(pickRandom(initial), words);
+  });
 
   const startNewRound = useCallback(() => {
-    // Reset all progress
     progressRef.current = new Map();
+    questionCountRef.current = 0;
     const reshuffled = shuffle(words);
-    const newActive = reshuffled.slice(0, Math.min(SESSION_SIZE, reshuffled.length));
-    const newQueue = reshuffled.slice(Math.min(SESSION_SIZE, reshuffled.length));
+    const newActive = reshuffled.slice(
+      0,
+      Math.min(SESSION_SIZE, reshuffled.length)
+    );
+    const newQueue = reshuffled.slice(
+      Math.min(SESSION_SIZE, reshuffled.length)
+    );
     setActiveWords(newActive);
     setQueue(newQueue);
     setRoundComplete(false);
-    setAnswered(null);
-    setQuestion(generateQuestion(pickWord(newActive), words));
-  }, [words, pickWord]);
+    setAnswered(false);
+    questionIdRef.current += 1;
+    setQuestion(generateQuestion(pickRandom(newActive), words));
+  }, [words]);
 
   const nextQuestion = useCallback(() => {
-    setAnswered(null);
-    setQuestion(generateQuestion(pickWord(activeWords), words));
-  }, [activeWords, words, pickWord]);
+    setAnswered(false);
+    questionCountRef.current += 1;
+    questionIdRef.current += 1;
 
-  const answer = (value: string) => {
-    if (answered) return;
-    setAnswered(value);
-    const isCorrect = value === question.correctAnswer;
-    setScore((s) => ({ correct: s.correct + (isCorrect ? 1 : 0), total: s.total + 1 }));
-
-    const wordId = question.word.id;
-    const prog = getProgress(wordId);
-
-    if (isCorrect) {
-      prog.consecutiveCorrect += 1;
+    // Periodically generate a match round if we have enough active words
+    if (
+      questionCountRef.current % MATCH_INTERVAL === 0 &&
+      activeWords.length >= 2
+    ) {
+      setQuestion(generateMatchQuestion(activeWords, words));
     } else {
-      prog.consecutiveCorrect = 0;
+      setQuestion(generateQuestion(pickRandom(activeWords), words));
     }
+  }, [activeWords, words]);
 
-    // Check if word is now "known"
-    if (prog.consecutiveCorrect >= REQUIRED_CORRECT && !prog.known) {
-      prog.known = true;
+  /**
+   * Handle answer from any sub-component.
+   * For match questions, perWordCorrect provides per-word results.
+   */
+  const handleAnswer = useCallback(
+    (isCorrect: boolean, perWordCorrect?: Map<string, boolean>) => {
+      if (answered) return;
+      setAnswered(true);
+      setLastCorrect(isCorrect);
+      setScore((s) => ({
+        correct: s.correct + (isCorrect ? 1 : 0),
+        total: s.total + 1,
+      }));
 
-      // Remove known word from active, add next from queue
-      const newActive = activeWords.filter((w) => w.id !== wordId);
+      // Update progress
+      if (question.type === "match" && perWordCorrect) {
+        // Handle per-word progress for match questions
+        let newActive = [...activeWords];
+        let newQueue = [...queue];
+        let anyKnown = false;
 
-      if (queue.length > 0) {
-        const [nextWord, ...restQueue] = queue;
-        newActive.push(nextWord);
-        setQueue(restQueue);
-        setActiveWords(newActive);
-      } else if (newActive.length > 0) {
-        setActiveWords(newActive);
-      } else {
-        // All words known! Round complete
-        setRoundComplete(true);
-        setActiveWords([]);
-        return;
+        for (const [wordId, correct] of perWordCorrect) {
+          const prog = getProgress(wordId);
+          if (correct) {
+            prog.consecutiveCorrect += 1;
+          } else {
+            prog.consecutiveCorrect = 0;
+          }
+
+          if (prog.consecutiveCorrect >= REQUIRED_CORRECT && !prog.known) {
+            prog.known = true;
+            anyKnown = true;
+            newActive = newActive.filter((w) => w.id !== wordId);
+            if (newQueue.length > 0) {
+              const [nextWord, ...rest] = newQueue;
+              newActive.push(nextWord);
+              newQueue = rest;
+            }
+          }
+        }
+
+        if (anyKnown) {
+          if (newActive.length === 0) {
+            setRoundComplete(true);
+            setActiveWords([]);
+            return;
+          }
+          setActiveWords(newActive);
+          setQueue(newQueue);
+        }
+      } else if (question.type !== "match") {
+        // Single-word question
+        const wordId = question.word.id;
+        const prog = getProgress(wordId);
+
+        if (isCorrect) {
+          prog.consecutiveCorrect += 1;
+        } else {
+          prog.consecutiveCorrect = 0;
+        }
+
+        if (prog.consecutiveCorrect >= REQUIRED_CORRECT && !prog.known) {
+          prog.known = true;
+          const newActive = activeWords.filter((w) => w.id !== wordId);
+
+          if (queue.length > 0) {
+            const [nextWord, ...restQueue] = queue;
+            newActive.push(nextWord);
+            setQueue(restQueue);
+            setActiveWords(newActive);
+          } else if (newActive.length > 0) {
+            setActiveWords(newActive);
+          } else {
+            setRoundComplete(true);
+            setActiveWords([]);
+            return;
+          }
+
+          // Auto-advance for known word
+          setTimeout(() => {
+            setAnswered(false);
+            questionCountRef.current += 1;
+            questionIdRef.current += 1;
+            setQuestion(
+              generateQuestion(pickRandom(newActive), words)
+            );
+          }, 1200);
+          return;
+        }
       }
+    },
+    [answered, question, activeWords, queue, words]
+  );
 
-      // Generate next question from updated active words after a delay
-      setTimeout(() => {
-        setAnswered(null);
-        setQuestion(generateQuestion(
-          newActive[Math.floor(Math.random() * newActive.length)],
-          words
-        ));
-      }, 1200);
-      return;
-    }
-  };
+  // Current word progress (for single-word questions)
+  const currentProg =
+    question.type !== "match" ? getProgress(question.word.id) : null;
 
-  const isCorrect = answered === question.correctAnswer;
-  const currentProg = getProgress(question.word.id);
+  // ── Round complete screen ──────────────────────────────────
 
   if (roundComplete) {
     return (
@@ -187,8 +234,11 @@ export const Quiz = ({ words, onExit }: QuizProps) => {
     );
   }
 
+  // ── Main quiz UI ───────────────────────────────────────────
+
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-sm mx-auto">
+      {/* Header: score + exit */}
       <div className="w-full flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
           ✓ {score.correct} / {score.total}
@@ -198,99 +248,81 @@ export const Quiz = ({ words, onExit }: QuizProps) => {
         </Button>
       </div>
 
-      {/* Progress indicator for current word */}
-      <div className="w-full flex items-center gap-1.5">
-        {Array.from({ length: REQUIRED_CORRECT }).map((_, i) => (
-          <div
-            key={i}
-            className={`h-1.5 flex-1 rounded-full transition-colors ${
-              i < currentProg.consecutiveCorrect
-                ? "bg-primary"
-                : "bg-muted"
-            }`}
-          />
-        ))}
-      </div>
+      {/* Progress indicator for current word (single-word questions only) */}
+      {currentProg && (
+        <div className="w-full flex items-center gap-1.5">
+          {Array.from({ length: REQUIRED_CORRECT }).map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 flex-1 rounded-full transition-colors ${
+                i < currentProg.consecutiveCorrect
+                  ? "bg-primary"
+                  : "bg-muted"
+              }`}
+            />
+          ))}
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
         <motion.div
-          key={`${score.total}-${question.word.id}`}
+          key={questionIdRef.current}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.2 }}
           className="w-full"
         >
-          <div className="rounded-2xl border bg-card p-6 text-center shadow-md">
-            <JapaneseText jp={question.word.jp} size="lg" audioUrl={question.word.audioUrl} />
+          {/* Render the appropriate quiz sub-component */}
+          {question.type === "multiple-choice" && (
+            <QuizMultipleChoice question={question} onAnswer={handleAnswer} />
+          )}
+          {question.type === "true-false" && (
+            <QuizTrueFalse question={question} onAnswer={handleAnswer} />
+          )}
+          {question.type === "word-build" && (
+            <QuizWordBuild question={question} onAnswer={handleAnswer} />
+          )}
+          {question.type === "match" && (
+            <QuizMatch question={question} onAnswer={handleAnswer} />
+          )}
+          {question.type === "fill-blank" && (
+            <QuizFillBlank question={question} onAnswer={handleAnswer} />
+          )}
+          {question.type === "listen-choose" && (
+            <QuizListenChoose question={question} onAnswer={handleAnswer} />
+          )}
 
-            {question.type === "multiple-choice" && (
-              <div className="mt-6 grid gap-3">
-                {question.options!.map((opt) => {
-                  const selected = answered === opt.vi;
-                  const correct = opt.vi === question.correctAnswer;
-                  let variant: "outline" | "default" | "destructive" = "outline";
-                  if (answered) {
-                    if (correct) variant = "default";
-                    else if (selected) variant = "destructive";
-                  }
-                  return (
-                    <Button
-                      key={opt.vi}
-                      variant={variant}
-                      className={`text-left justify-start h-auto py-3 px-4 ${
-                        answered && correct ? "bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))] hover:bg-[hsl(var(--success))]" : ""
-                      }`}
-                      onClick={() => answer(opt.vi)}
-                      disabled={!!answered}
-                    >
-                      {opt.vi}
-                    </Button>
-                  );
-                })}
-              </div>
-            )}
-
-            {question.type === "yes-no" && (
-              <div className="mt-4">
-                <p className="text-lg font-medium mb-4">= {question.displayedAnswer}?</p>
-                <div className="flex gap-3 justify-center">
-                  {["yes", "no"].map((val) => {
-                    const selected = answered === val;
-                    const correct = val === question.correctAnswer;
-                    let variant: "outline" | "default" | "destructive" = "outline";
-                    if (answered) {
-                      if (correct) variant = "default";
-                      else if (selected) variant = "destructive";
-                    }
-                    return (
-                      <Button
-                        key={val}
-                        variant={variant}
-                        className={`flex-1 h-12 text-base ${
-                          answered && correct ? "bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))] hover:bg-[hsl(var(--success))]" : ""
-                        }`}
-                        onClick={() => answer(val)}
-                        disabled={!!answered}
-                      >
-                        {val === "yes" ? "Đúng ✓" : "Sai ✗"}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {answered && !currentProg.known && (
+          {/* Feedback + next button (non-match, non-auto-advance) */}
+          {answered && question.type !== "match" && !currentProg?.known && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               className="mt-4 flex flex-col items-center gap-3"
             >
-              <div className={`flex items-center gap-2 text-sm font-medium ${isCorrect ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
-                {isCorrect ? <CheckCircle className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
-                {isCorrect ? "Chính xác!" : `Đáp án: ${question.correctAnswer === "yes" ? "Đúng" : question.correctAnswer === "no" ? "Sai" : question.correctAnswer}`}
+              <div
+                className={`flex items-center gap-2 text-sm font-medium ${
+                  lastCorrect
+                    ? "text-[hsl(var(--success))]"
+                    : "text-destructive"
+                }`}
+              >
+                {lastCorrect ? (
+                  <CheckCircle className="h-5 w-5" />
+                ) : (
+                  <XCircle className="h-5 w-5" />
+                )}
+                {lastCorrect
+                  ? "Chính xác!"
+                  : `Đáp án: ${
+                      question.type === "true-false"
+                        ? question.correctAnswer === "yes"
+                          ? "Đúng"
+                          : "Sai"
+                        : "correctAnswer" in question
+                          ? question.correctAnswer
+                          : ""
+                    }`}
               </div>
               <Button onClick={nextQuestion} className="w-full max-w-xs">
                 Câu tiếp theo →
@@ -298,7 +330,8 @@ export const Quiz = ({ words, onExit }: QuizProps) => {
             </motion.div>
           )}
 
-          {answered && currentProg.known && (
+          {/* Known word celebration */}
+          {answered && question.type !== "match" && currentProg?.known && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -308,7 +341,36 @@ export const Quiz = ({ words, onExit }: QuizProps) => {
                 <Trophy className="h-5 w-5" />
                 Đã thuộc từ này! 🎉
               </div>
-              <p className="text-xs text-muted-foreground">Đang chuyển từ tiếp theo…</p>
+              <p className="text-xs text-muted-foreground">
+                Đang chuyển từ tiếp theo…
+              </p>
+            </motion.div>
+          )}
+
+          {/* Match completion: next button */}
+          {answered && question.type === "match" && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mt-4 flex flex-col items-center gap-3"
+            >
+              <div
+                className={`flex items-center gap-2 text-sm font-medium ${
+                  lastCorrect
+                    ? "text-[hsl(var(--success))]"
+                    : "text-destructive"
+                }`}
+              >
+                {lastCorrect ? (
+                  <CheckCircle className="h-5 w-5" />
+                ) : (
+                  <XCircle className="h-5 w-5" />
+                )}
+                {lastCorrect ? "Nối đúng tất cả!" : "Có một số cặp chưa đúng"}
+              </div>
+              <Button onClick={nextQuestion} className="w-full max-w-xs">
+                Câu tiếp theo →
+              </Button>
             </motion.div>
           )}
         </motion.div>

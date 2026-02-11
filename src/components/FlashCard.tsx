@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Word } from "@/types/lesson";
-import { JapaneseText } from "@/components/JapaneseText";
+import { JapaneseText, InlineRuby } from "@/components/JapaneseText";
 import { ChevronLeft, ChevronRight, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -65,16 +65,10 @@ export const FlashCard = ({ words }: FlashCardProps) => {
                 <p className="text-lg font-medium text-foreground">{word.vi}</p>
                 {word.example[0] && (
                   <div className="mt-2 text-center">
-                    <p className="text-sm" style={{ fontFamily: "'Noto Serif JP', serif" }}>
-                      {word.example[0].jp.text !== word.example[0].jp.ruby ? (
-                        <ruby>
-                          {word.example[0].jp.text}
-                          <rt>{word.example[0].jp.ruby}</rt>
-                        </ruby>
-                      ) : (
-                        word.example[0].jp.text
-                      )}
-                    </p>
+                    <InlineRuby
+                      text={word.example[0].jp.text}
+                      className="text-sm"
+                    />
                     <p className="text-xs text-muted-foreground mt-1">{word.example[0].vi}</p>
                   </div>
                 )}

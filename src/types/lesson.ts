@@ -27,11 +27,77 @@ export interface SubLesson {
   words: Word[];
 }
 
-export interface QuizQuestion {
-  type: 'multiple-choice' | 'yes-no';
-  word: Word;
-  options?: Localization[];
+// ── Quiz types ──────────────────────────────────────────────
+
+export type QuizDirection =
+  | 'jp-to-vi'
+  | 'vi-to-jp'
+  | 'listen-to-vi'
+  | 'listen-to-jp';
+
+export interface MultipleChoiceQuestion {
+  type: 'multiple-choice';
+  direction: QuizDirection;
+  prompt: string;
+  promptJp?: JapaneseText;
+  options: string[];
   correctAnswer: string;
-  displayedAnswer?: string;
-  isCorrectPairing?: boolean;
+  word: Word;
 }
+
+export interface TrueFalseQuestion {
+  type: 'true-false';
+  direction: QuizDirection;
+  promptPair: [string, string];
+  promptJp?: JapaneseText;
+  correctAnswer: 'yes' | 'no';
+  isCorrectPairing: boolean;
+  word: Word;
+}
+
+export interface WordBuildQuestion {
+  type: 'word-build';
+  direction: QuizDirection;
+  prompt: string;
+  promptJp?: JapaneseText;
+  fragments: string[];
+  correctAnswer: string;
+  word: Word;
+}
+
+export interface MatchPair {
+  id: string;
+  prompt: string;
+  answer: string;
+}
+
+export interface MatchQuestion {
+  type: 'match';
+  pairs: MatchPair[];
+  words: Word[];
+}
+
+export interface FillBlankQuestion {
+  type: 'fill-blank';
+  sentence: string;
+  blankIndex: number;
+  options: string[];
+  correctAnswer: string;
+  word: Word;
+}
+
+export interface ListenChooseQuestion {
+  type: 'listen-choose';
+  listenText: string;
+  options: string[];
+  correctAnswer: string;
+  word: Word;
+}
+
+export type QuizQuestion =
+  | MultipleChoiceQuestion
+  | TrueFalseQuestion
+  | WordBuildQuestion
+  | MatchQuestion
+  | FillBlankQuestion
+  | ListenChooseQuestion;

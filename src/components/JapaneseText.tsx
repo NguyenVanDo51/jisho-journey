@@ -1,6 +1,32 @@
 import { JapaneseText as JpText } from "@/types/lesson";
 import { Volume2 } from "lucide-react";
 import { useCallback } from "react";
+import { parseRuby, hasRubyNotation, stripRuby } from "@/lib/utils";
+
+/**
+ * Render a string with inline 漢字[かんじ] furigana notation as <ruby> elements.
+ * Use this for any inline JP text that may contain kanji annotations.
+ */
+export const InlineRuby = ({ text, className = "" }: { text: string; className?: string }) => {
+  if (!hasRubyNotation(text)) {
+    return <span className={className}>{text}</span>;
+  }
+  const segments = parseRuby(text);
+  return (
+    <span className={className} style={{ fontFamily: "'Noto Serif JP', serif" }}>
+      {segments.map((seg, i) =>
+        seg.type === "ruby" ? (
+          <ruby key={i}>
+            {seg.base}
+            <rt className="text-[0.6em] text-muted-foreground">{seg.reading}</rt>
+          </ruby>
+        ) : (
+          <span key={i}>{seg.base}</span>
+        )
+      )}
+    </span>
+  );
+};
 
 interface JapaneseTextProps {
   jp: JpText;
@@ -43,7 +69,7 @@ export const speakJapanese = (text: string) => {
 };
 
 export const JapaneseText = ({ jp, showRomanji = true, className = "", size = "md", audioUrl }: JapaneseTextProps) => {
-  const hasKanji = jp.text !== jp.ruby;
+  const useInlineRuby = hasRubyNotation(jp.text);
 
   const handlePlay = useCallback(
     (e: React.MouseEvent) => {
@@ -51,23 +77,46 @@ export const JapaneseText = ({ jp, showRomanji = true, className = "", size = "m
       if (audioUrl) {
         playAudio(audioUrl);
       } else {
-        speakJapanese(jp.ruby || jp.text);
+        speakJapanese(jp.ruby || stripRuby(jp.text));
       }
     },
     [audioUrl, jp.ruby, jp.text]
   );
 
+  const renderText = () => {
+    if (useInlineRuby) {
+      // Per-kanji furigana: parse 漢字[かんじ] notation
+      const segments = parseRuby(jp.text);
+      return segments.map((seg, i) =>
+        seg.type === "ruby" ? (
+          <ruby key={i}>
+            {seg.base}
+            <rt className="text-muted-foreground">{seg.reading}</rt>
+          </ruby>
+        ) : (
+          <span key={i}>{seg.base}</span>
+        )
+      );
+    }
+
+    // Legacy: whole-text ruby fallback (text !== ruby means kanji exists)
+    const hasKanji = jp.text !== jp.ruby;
+    if (hasKanji) {
+      return (
+        <ruby>
+          {jp.text}
+          <rt className="text-muted-foreground">{jp.ruby}</rt>
+        </ruby>
+      );
+    }
+
+    return jp.text;
+  };
+
   return (
     <div className={`flex flex-col items-center gap-1 ${className}`}>
       <span className={`${sizeClasses[size]} font-semibold leading-relaxed inline-flex items-center gap-2`} style={{ fontFamily: "'Noto Serif JP', serif" }}>
-        {hasKanji ? (
-          <ruby>
-            {jp.text}
-            <rt className="text-muted-foreground">{jp.ruby}</rt>
-          </ruby>
-        ) : (
-          jp.text
-        )}
+        {renderText()}
         <button
           onClick={handlePlay}
           className="text-primary hover:text-primary/80 transition-colors active:scale-90"
