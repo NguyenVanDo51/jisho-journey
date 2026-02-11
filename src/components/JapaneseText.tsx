@@ -30,15 +30,31 @@ export const playAudio = (url: string) => {
   audio.play().catch(() => {});
 };
 
+export const speakJapanese = (text: string) => {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "ja-JP";
+  utterance.rate = 0.85;
+  const voices = window.speechSynthesis.getVoices();
+  const jpVoice = voices.find((v) => v.lang.startsWith("ja"));
+  if (jpVoice) utterance.voice = jpVoice;
+  window.speechSynthesis.speak(utterance);
+};
+
 export const JapaneseText = ({ jp, showRomanji = true, className = "", size = "md", audioUrl }: JapaneseTextProps) => {
   const hasKanji = jp.text !== jp.ruby;
 
   const handlePlay = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (audioUrl) playAudio(audioUrl);
+      if (audioUrl) {
+        playAudio(audioUrl);
+      } else {
+        speakJapanese(jp.ruby || jp.text);
+      }
     },
-    [audioUrl]
+    [audioUrl, jp.ruby, jp.text]
   );
 
   return (
@@ -52,15 +68,13 @@ export const JapaneseText = ({ jp, showRomanji = true, className = "", size = "m
         ) : (
           jp.text
         )}
-        {audioUrl && (
-          <button
-            onClick={handlePlay}
-            className="text-primary hover:text-primary/80 transition-colors active:scale-90"
-            aria-label="Phát âm thanh"
-          >
-            <Volume2 className={iconSizes[size]} />
-          </button>
-        )}
+        <button
+          onClick={handlePlay}
+          className="text-primary hover:text-primary/80 transition-colors active:scale-90"
+          aria-label="Phát âm thanh"
+        >
+          <Volume2 className={iconSizes[size]} />
+        </button>
       </span>
       {showRomanji && (
         <span className="text-sm text-muted-foreground italic">{jp.romanji}</span>
