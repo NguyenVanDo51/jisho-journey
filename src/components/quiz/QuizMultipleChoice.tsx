@@ -1,6 +1,7 @@
+/** QuizMultipleChoice — pick the correct translation from 4 options. */
 import { MultipleChoiceQuestion } from "@/types/lesson";
 import { JapaneseText, InlineRuby } from "@/components/JapaneseText";
-import { Button } from "@/components/ui/button";
+import { QuizOptionButton } from "./QuizOptionButton";
 import { useState } from "react";
 
 interface Props {
@@ -22,43 +23,22 @@ export const QuizMultipleChoice = ({ question, onAnswer }: Props) => {
 
   return (
     <div className="rounded-2xl border bg-card p-6 text-center shadow-md">
-      {/* Prompt */}
       {isJpPrompt && question.promptJp ? (
         <JapaneseText jp={question.promptJp} size="lg" />
       ) : (
         <p className="text-2xl font-semibold">{question.prompt}</p>
       )}
-
       <p className="text-xs text-muted-foreground mt-2">
         {isJpPrompt ? "Chọn nghĩa tiếng Việt" : "Chọn từ tiếng Nhật"}
       </p>
 
-      {/* Options */}
       <div className="mt-6 grid gap-3">
-        {question.options.map((opt) => {
-          const isSelected = selected === opt;
-          const isCorrect = opt === question.correctAnswer;
-          let variant: "outline" | "default" | "destructive" = "outline";
-          if (answered) {
-            if (isCorrect) variant = "default";
-            else if (isSelected) variant = "destructive";
-          }
-          return (
-            <Button
-              key={opt}
-              variant={variant}
-              className={`text-left justify-start h-auto py-3 px-4 ${
-                answered && isCorrect
-                  ? "bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))] hover:bg-[hsl(var(--success))]"
-                  : ""
-              }`}
-              onClick={() => handleSelect(opt)}
-              disabled={answered}
-            >
-              <InlineRuby text={opt} />
-            </Button>
-          );
-        })}
+        {question.options.map((opt) => (
+          <QuizOptionButton key={opt} selected={selected === opt} isCorrect={opt === question.correctAnswer}
+            answered={answered} onClick={() => handleSelect(opt)} className="text-left justify-start">
+            <InlineRuby text={opt} />
+          </QuizOptionButton>
+        ))}
       </div>
     </div>
   );
