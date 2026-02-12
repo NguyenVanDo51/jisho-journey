@@ -213,11 +213,18 @@ function generateListenChoose(
  * Generate a single-word quiz question of a random type.
  * Falls back gracefully if a type can't be generated (e.g., no examples for fill-blank).
  */
-export function generateQuestion(word: Word, pool: Word[]): QuizQuestion {
+export function generateQuestion(
+  word: Word,
+  pool: Word[],
+  options?: { excludeTypes?: SingleQuestionType[] }
+): QuizQuestion {
   const maxAttempts = 5;
+  const excluded = options?.excludeTypes ?? [];
 
   for (let i = 0; i < maxAttempts; i++) {
     const type = pickWeightedType();
+
+    if (excluded.includes(type)) continue;
 
     switch (type) {
       case "multiple-choice":

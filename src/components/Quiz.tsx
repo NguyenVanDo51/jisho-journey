@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Word, QuizQuestion } from "@/types/lesson";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, X, Trophy } from "lucide-react";
+import { CheckCircle, XCircle, X, Trophy, VolumeX } from "lucide-react";
 import { shuffle, pickRandom } from "@/lib/utils";
 import {
   generateQuestion,
@@ -53,7 +53,7 @@ export const Quiz = ({ words, onExit }: QuizProps) => {
     allShuffled.slice(Math.min(SESSION_SIZE, allShuffled.length))
   );
   const [roundComplete, setRoundComplete] = useState(false);
-
+  const [noAudio, setNoAudio] = useState(false);
   const [score, setScore] = useState({ correct: 0, total: 0 });
   const [answered, setAnswered] = useState(false);
   const [lastCorrect, setLastCorrect] = useState(false);
@@ -86,6 +86,7 @@ export const Quiz = ({ words, onExit }: QuizProps) => {
     setRoundComplete(false);
     setAnswered(false);
     questionIdRef.current += 1;
+    setNoAudio(false);
     setQuestion(generateQuestion(pickRandom(newActive), words));
   }, [words]);
 
@@ -101,9 +102,9 @@ export const Quiz = ({ words, onExit }: QuizProps) => {
     ) {
       setQuestion(generateMatchQuestion(activeWords, words));
     } else {
-      setQuestion(generateQuestion(pickRandom(activeWords), words));
+      setQuestion(generateQuestion(pickRandom(activeWords), words, noAudio ? { excludeTypes: ["listen-choose"] } : undefined));
     }
-  }, [activeWords, words]);
+  }, [activeWords, words, noAudio]);
 
   /**
    * Handle answer from any sub-component.
@@ -189,7 +190,7 @@ export const Quiz = ({ words, onExit }: QuizProps) => {
             questionCountRef.current += 1;
             questionIdRef.current += 1;
             setQuestion(
-              generateQuestion(pickRandom(newActive), words)
+              generateQuestion(pickRandom(newActive), words, noAudio ? { excludeTypes: ["listen-choose"] } : undefined)
             );
           }, 1200);
           return;
@@ -198,6 +199,18 @@ export const Quiz = ({ words, onExit }: QuizProps) => {
     },
     [answered, question, activeWords, queue, words]
   );
+
+  const handleToggleNoAudio = useCallback(() => {
+    const newVal = !noAudio;
+    setNoAudio(newVal);
+    // If currently on a listen-choose question, skip it immediately
+    if (newVal && question.type === "listen-choose") {
+      setAnswered(false);
+      questionCountRef.current += 1;
+      questionIdRef.current += 1;
+      setQuestion(generateQuestion(pickRandom(activeWords), words, { excludeTypes: ["listen-choose"] }));
+    }
+  }, [noAudio, question, activeWords, words]);
 
   // Current word progress (for single-word questions)
   const currentProg =
@@ -238,14 +251,26 @@ export const Quiz = ({ words, onExit }: QuizProps) => {
 
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-sm mx-auto">
-      {/* Header: score + exit */}
+      {/* Header: score + no-audio + exit */}
       <div className="w-full flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
           ✓ {score.correct} / {score.total}
         </div>
-        <Button variant="ghost" size="icon" onClick={onExit}>
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant={noAudio ? "secondary" : "ghost"}
+            size="sm"
+            onClick={handleToggleNoAudio}
+            className={`text-xs gap-1.5 h-8 ${noAudio ? "text-destructive" : "text-muted-foreground"}`}
+            title={noAudio ? "Bật lại âm thanh" : "Tắt câu hỏi nghe"}
+          >
+            <VolumeX className="h-3.5 w-3.5" />
+            {noAudio ? "Đã tắt nghe" : "Không nghe"}
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onExit}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Progress indicator for current word (single-word questions only) */}
