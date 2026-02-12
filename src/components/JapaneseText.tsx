@@ -2,6 +2,7 @@ import { JapaneseText as JpText } from "@/types/lesson";
 import { Volume2 } from "lucide-react";
 import { useCallback } from "react";
 import { parseRuby, hasRubyNotation, stripRuby } from "@/lib/utils";
+import { useSettings } from "@/contexts/SettingsContext";
 
 /**
  * Render a string with inline 漢字[かんじ] furigana notation as <ruby> elements.
@@ -30,7 +31,7 @@ export const InlineRuby = ({ text, className = "" }: { text: string; className?:
 
 interface JapaneseTextProps {
   jp: JpText;
-  showRomanji?: boolean;
+  showRomanji?: boolean; // If provided, overrides the global setting
   className?: string;
   size?: "sm" | "md" | "lg" | "xl";
   audioUrl?: string;
@@ -68,8 +69,12 @@ export const speakJapanese = (text: string) => {
   window.speechSynthesis.speak(utterance);
 };
 
-export const JapaneseText = ({ jp, showRomanji = true, className = "", size = "md", audioUrl }: JapaneseTextProps) => {
+export const JapaneseText = ({ jp, showRomanji, className = "", size = "md", audioUrl }: JapaneseTextProps) => {
+  const { settings } = useSettings();
   const useInlineRuby = hasRubyNotation(jp.text);
+  
+  // Use provided showRomanji prop, or fall back to global setting
+  const shouldShowRomanji = showRomanji !== undefined ? showRomanji : settings.displayRomanji;
 
   const handlePlay = useCallback(
     (e: React.MouseEvent) => {
@@ -125,7 +130,7 @@ export const JapaneseText = ({ jp, showRomanji = true, className = "", size = "m
           <Volume2 className={iconSizes[size]} />
         </button>
       </span>
-      {showRomanji && (
+      {shouldShowRomanji && (
         <span className="text-sm text-muted-foreground italic">{jp.romanji}</span>
       )}
     </div>

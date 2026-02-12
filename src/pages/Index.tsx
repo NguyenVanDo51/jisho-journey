@@ -1,13 +1,20 @@
 import { Link } from "react-router-dom";
 import { lessons } from "@/data/lessons";
 import { JapaneseText } from "@/components/JapaneseText";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Settings } from "lucide-react";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="pt-12 pb-8 px-6 text-center">
+      <header className="pt-12 pb-8 px-6 text-center relative">
+        <Link
+          to="/settings"
+          className="absolute top-4 right-4 flex items-center justify-center h-10 w-10 rounded-full hover:bg-accent transition-colors"
+          aria-label="Cài đặt"
+        >
+          <Settings className="h-5 w-5" />
+        </Link>
         <h1 className="text-3xl font-bold tracking-tight" style={{ fontFamily: "'Noto Serif JP', serif" }}>
           日本語学習
         </h1>
@@ -22,7 +29,7 @@ const Index = () => {
             <Link
               key={lesson.id}
               to={`/lesson/${lesson.id}`}
-              className="block rounded-xl border bg-card p-5 shadow-sm hover:shadow-md transition-shadow active:scale-[0.98] transition-transform"
+              className="block rounded-xl border bg-card p-5 shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
             >
               <div className="flex items-center justify-between">
                 <div>
