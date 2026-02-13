@@ -4,7 +4,6 @@ import { lessons } from "@/data/lessons";
 import { JapaneseText } from "@/components/JapaneseText";
 import { FlashCard } from "@/components/FlashCard";
 import { Quiz } from "@/components/Quiz";
-import { LessonChat } from "@/components/LessonChat";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Play, MessageCircle } from "lucide-react";
 import { useLearnedWords } from "@/hooks/useLearnedWords";
@@ -13,7 +12,6 @@ const LessonDetail = () => {
   const { id } = useParams<{ id: string }>();
   const lesson = lessons.find((l) => l.id === id);
   const [quizMode, setQuizMode] = useState(false);
-  const [showChat, setShowChat] = useState(false);
   const { learnedIds, markLearned } = useLearnedWords(id || "");
 
   if (!lesson) {
@@ -56,17 +54,13 @@ const LessonDetail = () => {
             <Play className="h-4 w-4" />
             Kiểm tra
           </Button>
-          <Button onClick={() => setShowChat(!showChat)} variant="outline" className="gap-2" size="lg">
-            <MessageCircle className="h-4 w-4" />
-            Chat AI
-          </Button>
+          <Link to={`/lesson/${id}/chat`}>
+            <Button variant="outline" className="gap-2" size="lg">
+              <MessageCircle className="h-4 w-4" />
+              Chat AI
+            </Button>
+          </Link>
         </div>
-
-        {showChat && (
-          <div className="mt-6">
-            <LessonChat lessonWords={lesson.words} lessonId={lesson.id} />
-          </div>
-        )}
       </main>
     </div>
   );

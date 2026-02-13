@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SettingsProvider } from "./contexts/SettingsContext";
 import Index from "./pages/Index";
 import LessonDetail from "./pages/LessonDetail";
+import LessonChatPage from "./pages/LessonChatPage";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -21,6 +22,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/lesson/:id" element={<LessonDetail />} />
+            <Route path="/lesson/:id/chat" element={<LessonChatPage />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
