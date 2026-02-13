@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Word } from "@/types/lesson";
 import { JapaneseText, InlineRuby } from "@/components/JapaneseText";
@@ -7,14 +7,21 @@ import { Button } from "@/components/ui/button";
 
 interface FlashCardProps {
   words: Word[];
+  /** Called when a word is displayed (viewed = learned) */
+  onWordViewed?: (wordId: string) => void;
 }
 
-export const FlashCard = ({ words }: FlashCardProps) => {
+export const FlashCard = ({ words, onWordViewed }: FlashCardProps) => {
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [direction, setDirection] = useState(0);
 
   const word = words[index];
+
+  // Mark first word as viewed on mount, and each word when navigated to
+  useEffect(() => {
+    onWordViewed?.(words[index]?.id);
+  }, [index, words, onWordViewed]);
 
   const next = () => {
     if (index < words.length - 1) {

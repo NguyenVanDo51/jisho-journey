@@ -1,1 +1,4 @@
 project_id = "xsynnmnryeezmiuesbul"
+
+[functions.lesson-chat]
+verify_jwt = false
