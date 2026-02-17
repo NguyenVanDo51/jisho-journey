@@ -2,6 +2,7 @@ import { Lesson } from "@/types/lesson";
 
 export const daysOfMonthLesson: Lesson = {
   id: "days-of-month",
+  category: "basic",
   title: {
     vi: "Ngày trong tháng",
     jp: { text: "日[ひ]にち", ruby: "ひにち", romanji: "hinichi" }

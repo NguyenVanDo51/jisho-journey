@@ -2,6 +2,7 @@ import { Lesson } from "@/types/lesson";
 
 export const hiraganaLesson: Lesson = {
   id: "hiragana",
+  category: "basic",
   title: {
     vi: "Chữ Hiragana",
     jp: { text: "ひらがな", ruby: "ひらがな", romanji: "hiragana" }

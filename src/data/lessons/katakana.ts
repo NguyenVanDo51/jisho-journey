@@ -2,6 +2,7 @@ import { Lesson } from "@/types/lesson";
 
 export const katakanaLesson: Lesson = {
   id: "katakana",
+  category: "basic",
   title: {
     vi: "Chữ Katakana",
     jp: { text: "カタカナ", ruby: "カタカナ", romanji: "katakana" }
