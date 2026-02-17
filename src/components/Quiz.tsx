@@ -1,6 +1,7 @@
 /** Quiz — thin orchestrator rendering header, progress, question, and feedback. */
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Word } from "@/types/lesson";
+import { Word, GrammarPoint } from "@/types/lesson";
 import { Button } from "@/components/ui/button";
 import { X, Trophy, VolumeX } from "lucide-react";
 import { useQuizSession } from "@/hooks/useQuizSession";
@@ -11,9 +12,11 @@ import { QuizMatch } from "@/components/quiz/QuizMatch";
 import { QuizFillBlank } from "@/components/quiz/QuizFillBlank";
 import { QuizListenChoose } from "@/components/quiz/QuizListenChoose";
 import { QuizFeedback } from "@/components/quiz/QuizFeedback";
+import { GrammarCard } from "@/components/GrammarCard";
 
 interface QuizProps {
   words: Word[];
+  grammar?: GrammarPoint[];
   onExit: () => void;
 }
 
@@ -24,12 +27,47 @@ function getCorrectText(question: ReturnType<typeof useQuizSession>["question"])
   return "correctAnswer" in question ? String(question.correctAnswer) : "";
 }
 
-export const Quiz = ({ words, onExit }: QuizProps) => {
+export const Quiz = ({ words, grammar, onExit }: QuizProps) => {
   const {
     question, score, answered, lastCorrect, noAudio, roundComplete,
     currentProg, knownCount, questionKey, requiredCorrect,
     handleAnswer, nextQuestion, startNewRound, handleToggleNoAudio,
   } = useQuizSession(words);
+
+  // Grammar interleaving: show grammar card every ~6 questions
+  const GRAMMAR_INTERVAL = 6;
+  const [showGrammar, setShowGrammar] = useState<GrammarPoint | null>(null);
+  const [grammarShownIds, setGrammarShownIds] = useState<Set<string>>(new Set());
+  const [questionsSinceGrammar, setQuestionsSinceGrammar] = useState(0);
+
+  const handleNextWithGrammar = () => {
+    const newCount = questionsSinceGrammar + 1;
+    setQuestionsSinceGrammar(newCount);
+
+    // Check if it's time to show a grammar card
+    if (grammar && grammar.length > 0 && newCount >= GRAMMAR_INTERVAL) {
+      // Find a grammar point related to the current question's word, or pick next unshown
+      const currentGrammarId = question.type !== "match" ? question.word.grammarId : undefined;
+      const relatedGrammar = currentGrammarId
+        ? grammar.find((g) => g.id === currentGrammarId && !grammarShownIds.has(g.id))
+        : undefined;
+      const nextGrammar = relatedGrammar || grammar.find((g) => !grammarShownIds.has(g.id));
+
+      if (nextGrammar) {
+        setShowGrammar(nextGrammar);
+        setGrammarShownIds((prev) => new Set(prev).add(nextGrammar.id));
+        setQuestionsSinceGrammar(0);
+        return;
+      }
+    }
+
+    nextQuestion();
+  };
+
+  const handleGrammarContinue = () => {
+    setShowGrammar(null);
+    nextQuestion();
+  };
 
   // ── Round complete ──
   if (roundComplete) {
@@ -46,6 +84,19 @@ export const Quiz = ({ words, onExit }: QuizProps) => {
             <Button onClick={startNewRound} className="flex-1">Học lại</Button>
           </div>
         </motion.div>
+      </div>
+    );
+  }
+
+  // ── Grammar interlude ──
+  if (showGrammar) {
+    return (
+      <div className="flex flex-col items-center gap-6 w-full max-w-sm mx-auto">
+        <div className="w-full flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">💡 Ôn ngữ pháp</div>
+          <Button variant="ghost" size="icon" onClick={onExit}><X className="h-4 w-4" /></Button>
+        </div>
+        <GrammarCard grammar={showGrammar} onContinue={handleGrammarContinue} />
       </div>
     );
   }
@@ -101,7 +152,7 @@ export const Quiz = ({ words, onExit }: QuizProps) => {
             isKnown={currentProg?.known ?? false}
             lastCorrect={lastCorrect}
             correctAnswerText={getCorrectText(question)}
-            onNext={nextQuestion}
+            onNext={handleNextWithGrammar}
           />
         </motion.div>
       </AnimatePresence>
