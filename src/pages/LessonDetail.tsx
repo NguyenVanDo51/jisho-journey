@@ -25,7 +25,7 @@ const LessonDetail = () => {
   if (quizMode) {
     return (
       <div className="min-h-screen bg-background px-4 pt-8 pb-12">
-        <Quiz words={lesson.words} onExit={() => setQuizMode(false)} />
+        <Quiz words={lesson.words} grammar={lesson.grammar} onExit={() => setQuizMode(false)} />
       </div>
     );
   }
@@ -47,7 +47,7 @@ const LessonDetail = () => {
       </header>
 
       <main className="px-4 pb-12 max-w-lg mx-auto">
-        <FlashCard words={lesson.words} onWordViewed={markLearned} />
+        <FlashCard words={lesson.words} grammar={lesson.grammar} onWordViewed={markLearned} />
 
         <div className="mt-8 flex justify-center gap-3">
           <Button onClick={() => setQuizMode(true)} className="gap-2" size="lg">

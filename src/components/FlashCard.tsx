@@ -1,22 +1,26 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Word } from "@/types/lesson";
+import { Word, GrammarPoint } from "@/types/lesson";
 import { JapaneseText, InlineRuby } from "@/components/JapaneseText";
-import { ChevronLeft, ChevronRight, Lightbulb } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lightbulb, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { GrammarCard } from "@/components/GrammarCard";
 
 interface FlashCardProps {
   words: Word[];
+  grammar?: GrammarPoint[];
   /** Called when a word is displayed (viewed = learned) */
   onWordViewed?: (wordId: string) => void;
 }
 
-export const FlashCard = ({ words, onWordViewed }: FlashCardProps) => {
+export const FlashCard = ({ words, grammar, onWordViewed }: FlashCardProps) => {
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [direction, setDirection] = useState(0);
+  const [showGrammar, setShowGrammar] = useState<GrammarPoint | null>(null);
 
   const word = words[index];
+  const linkedGrammar = grammar?.find((g) => g.id === word.grammarId);
 
   // Mark first word as viewed on mount, and each word when navigated to
   useEffect(() => {
@@ -85,11 +89,35 @@ export const FlashCard = ({ words, onWordViewed }: FlashCardProps) => {
                     <span>{word.tip}</span>
                   </div>
                 )}
+                {linkedGrammar && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowGrammar(linkedGrammar); }}
+                    className="flex items-center gap-1.5 mt-2 text-xs text-primary/80 hover:text-primary transition-colors"
+                  >
+                    <BookOpen className="h-3 w-3" />
+                    <span className="underline underline-offset-2">{linkedGrammar.title.vi}</span>
+                  </button>
+                )}
               </>
             )}
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Grammar overlay */}
+      <AnimatePresence>
+        {showGrammar && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setShowGrammar(null)}
+          >
+            <div className="w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+              <GrammarCard grammar={showGrammar} onContinue={() => setShowGrammar(null)} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" onClick={prev} disabled={index === 0}>

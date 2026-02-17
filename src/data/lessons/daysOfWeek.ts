@@ -6,12 +6,64 @@ export const daysOfWeekLesson: Lesson = {
     vi: "Thứ trong tuần",
     jp: { text: "曜日[ようび]", ruby: "ようび", romanji: "youbi" }
   },
+  grammar: [
+    {
+      id: "g-wa-desu",
+      title: {
+        vi: "Câu khẳng định cơ bản",
+        jp: { text: "〜は〜です", ruby: "〜は〜です", romanji: "~ wa ~ desu" }
+      },
+      structure: "A は B です",
+      explanation: "Dùng để nói \"A là B\". は (wa) là trợ từ chủ đề, です (desu) là động từ \"là\" lịch sự.",
+      examples: [
+        { vi: "Hôm nay là thứ Hai", jp: { text: "今日[きょう]は月曜日[げつようび]です", ruby: "きょうはげつようびです", romanji: "kyou wa getsuyoubi desu" } },
+        { vi: "Ngày mai là thứ Ba", jp: { text: "明日[あした]は火曜日[かようび]です", ruby: "あしたはかようびです", romanji: "ashita wa kayoubi desu" } },
+      ]
+    },
+    {
+      id: "g-deshita",
+      title: {
+        vi: "Câu quá khứ lịch sự",
+        jp: { text: "〜でした", ruby: "〜でした", romanji: "~ deshita" }
+      },
+      structure: "A は B でした",
+      explanation: "Dùng để nói \"A đã là B\" — thể quá khứ lịch sự của です. Thêm た để chuyển sang quá khứ.",
+      examples: [
+        { vi: "Hôm qua là thứ Tư", jp: { text: "昨日[きのう]は水曜日[すいようび]でした", ruby: "きのうはすいようびでした", romanji: "kinou wa suiyoubi deshita" } },
+      ]
+    },
+    {
+      id: "g-ni",
+      title: {
+        vi: "Trợ từ に (thời gian/địa điểm)",
+        jp: { text: "〜に", ruby: "〜に", romanji: "~ ni" }
+      },
+      structure: "Thời gian/Nơi chốn + に + Động từ",
+      explanation: "Trợ từ に dùng để chỉ thời điểm cụ thể hoặc nơi chốn đến. Ví dụ: 土曜日に = vào thứ Bảy.",
+      examples: [
+        { vi: "Thứ Bảy tôi đi chơi", jp: { text: "土曜日[どようび]に遊[あそ]びに行[い]きます", ruby: "どようびにあそびにいきます", romanji: "doyoubi ni asobi ni ikimasu" } },
+      ]
+    },
+    {
+      id: "g-ka-question",
+      title: {
+        vi: "Câu hỏi với か",
+        jp: { text: "〜ですか", ruby: "〜ですか", romanji: "~ desu ka" }
+      },
+      structure: "Câu khẳng định + か",
+      explanation: "Thêm か vào cuối câu để biến thành câu hỏi. Không cần đảo ngữ như tiếng Anh.",
+      examples: [
+        { vi: "Hôm nay là ngày gì?", jp: { text: "今日[きょう]は何曜日[なんようび]ですか", ruby: "きょうはなんようびですか", romanji: "kyou wa nan'youbi desu ka" } },
+      ]
+    },
+  ],
   words: [
     {
       id: "dow01", vi: "Thứ Hai",
       jp: { text: "月曜日[げつようび]", ruby: "げつようび", romanji: "getsuyoubi" },
       example: [{ vi: "Hôm nay là thứ Hai", jp: { text: "今日[きょう]は月曜日[げつようび]です", ruby: "きょうはげつようびです", romanji: "kyou wa getsuyoubi desu" } }],
       tip: "月 (tsuki) = mặt trăng",
+      grammarId: "g-wa-desu",
       audioUrl: ""
     },
     {
@@ -19,6 +71,7 @@ export const daysOfWeekLesson: Lesson = {
       jp: { text: "火曜日[かようび]", ruby: "かようび", romanji: "kayoubi" },
       example: [{ vi: "Ngày mai là thứ Ba", jp: { text: "明日[あした]は火曜日[かようび]です", ruby: "あしたはかようびです", romanji: "ashita wa kayoubi desu" } }],
       tip: "火 (hi) = lửa",
+      grammarId: "g-wa-desu",
       audioUrl: ""
     },
     {
@@ -26,6 +79,7 @@ export const daysOfWeekLesson: Lesson = {
       jp: { text: "水曜日[すいようび]", ruby: "すいようび", romanji: "suiyoubi" },
       example: [{ vi: "Hôm qua là thứ Tư", jp: { text: "昨日[きのう]は水曜日[すいようび]でした", ruby: "きのうはすいようびでした", romanji: "kinou wa suiyoubi deshita" } }],
       tip: "水 (mizu) = nước",
+      grammarId: "g-deshita",
       audioUrl: ""
     },
     {
@@ -47,6 +101,7 @@ export const daysOfWeekLesson: Lesson = {
       jp: { text: "土曜日[どようび]", ruby: "どようび", romanji: "doyoubi" },
       example: [{ vi: "Thứ Bảy tôi đi chơi", jp: { text: "土曜日[どようび]に遊[あそ]びに行[い]きます", ruby: "どようびにあそびにいきます", romanji: "doyoubi ni asobi ni ikimasu" } }],
       tip: "土 (tsuchi) = đất",
+      grammarId: "g-ni",
       audioUrl: ""
     },
     {
@@ -74,6 +129,7 @@ export const daysOfWeekLesson: Lesson = {
       id: "dow10", vi: "Hôm nay",
       jp: { text: "今日[きょう]", ruby: "きょう", romanji: "kyou" },
       example: [{ vi: "Hôm nay là ngày gì?", jp: { text: "今日[きょう]は何曜日[なんようび]ですか", ruby: "きょうはなんようびですか", romanji: "kyou wa nan'youbi desu ka" } }],
+      grammarId: "g-ka-question",
       audioUrl: ""
     },
     {
@@ -93,6 +149,7 @@ export const daysOfWeekLesson: Lesson = {
       jp: { text: "何曜日[なんようび]", ruby: "なんようび", romanji: "nan'youbi" },
       example: [{ vi: "Hôm nay là ngày gì?", jp: { text: "今日[きょう]は何曜日[なんようび]ですか", ruby: "きょうはなんようびですか", romanji: "kyou wa nan'youbi desu ka" } }],
       tip: "Dùng để hỏi thứ trong tuần",
+      grammarId: "g-ka-question",
       audioUrl: ""
     },
     {

@@ -9,17 +9,27 @@ export interface Localization {
   jp: JapaneseText;
 }
 
+export interface GrammarPoint {
+  id: string;
+  title: Localization;
+  structure: string;        // e.g. "〜は〜です"
+  explanation: string;      // Vietnamese explanation
+  examples: Localization[]; // Example sentences
+}
+
 export interface Word extends Localization {
   id: string;
   example: Localization[];
   tip?: string;
   audioUrl: string;
+  grammarId?: string;       // Links this word/example to a grammar point
 }
 
 export interface Lesson {
   id: string;
   title: Localization;
   words: Word[];
+  grammar?: GrammarPoint[]; // Grammar points taught in this lesson
 }
 
 export interface SubLesson {
