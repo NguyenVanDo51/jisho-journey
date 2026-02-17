@@ -2,6 +2,7 @@ import { Lesson } from "@/types/lesson";
 
 export const numbersLesson: Lesson = {
   id: "numbers",
+  category: "basic",
   title: {
     vi: "Số đếm (1-1000)",
     jp: { text: "数字[すうじ]", ruby: "すうじ", romanji: "suuji" }

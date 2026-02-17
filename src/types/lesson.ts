@@ -25,11 +25,29 @@ export interface Word extends Localization {
   grammarId?: string;       // Links this word/example to a grammar point
 }
 
+export type LessonCategory = 'basic' | 'n5' | 'n4' | 'n3' | 'n2' | 'n1';
+
+export interface LessonCategoryInfo {
+  id: LessonCategory;
+  title: string;
+  description: string;
+}
+
+export const lessonCategories: LessonCategoryInfo[] = [
+  { id: 'basic', title: 'Cơ bản', description: 'Bảng chữ cái, số đếm, từ vựng cơ bản' },
+  { id: 'n5', title: 'N5 — Minna no Nihongo', description: 'Sơ cấp 1' },
+  { id: 'n4', title: 'N4 — Minna no Nihongo', description: 'Sơ cấp 2' },
+  { id: 'n3', title: 'N3', description: 'Trung cấp' },
+  { id: 'n2', title: 'N2', description: 'Trung cao cấp' },
+  { id: 'n1', title: 'N1', description: 'Cao cấp' },
+];
+
 export interface Lesson {
   id: string;
   title: Localization;
+  category: LessonCategory;
   words: Word[];
-  grammar?: GrammarPoint[]; // Grammar points taught in this lesson
+  grammar?: GrammarPoint[];
 }
 
 export interface SubLesson {

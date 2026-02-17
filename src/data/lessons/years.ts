@@ -2,6 +2,7 @@ import { Lesson } from "@/types/lesson";
 
 export const yearsLesson: Lesson = {
   id: "years",
+  category: "basic",
   title: {
     vi: "Năm và thời gian",
     jp: { text: "年[ねん]", ruby: "ねん", romanji: "nen" }
